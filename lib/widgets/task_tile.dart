@@ -5,11 +5,13 @@ class TaskTile extends StatelessWidget {
   final Task task;
   final VoidCallback onToggle;
   final VoidCallback onDelete;
+  final VoidCallback onTap; // New function for tapping task
 
   TaskTile({
     required this.task,
     required this.onToggle,
     required this.onDelete,
+    required this.onTap,
   });
 
   @override
@@ -21,6 +23,17 @@ class TaskTile extends StatelessWidget {
           decoration: task.isCompleted ? TextDecoration.lineThrough : null,
         ),
       ),
+      subtitle: Text(
+        "Priority: ${task.priority.toUpperCase()}",
+        style: TextStyle(
+          color:
+              task.priority == "high"
+                  ? Colors.red
+                  : task.priority == "medium"
+                  ? Colors.orange
+                  : Colors.green,
+        ),
+      ),
       leading: Checkbox(
         value: task.isCompleted,
         onChanged: (value) => onToggle(),
@@ -29,6 +42,7 @@ class TaskTile extends StatelessWidget {
         icon: Icon(Icons.delete, color: Colors.red),
         onPressed: onDelete,
       ),
+      onTap: onTap, // Open priority screen on tap
     );
   }
 }
