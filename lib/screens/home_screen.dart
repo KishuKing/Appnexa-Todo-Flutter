@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/task_model.dart';
 import '../services/local_storage.dart';
 import '../widgets/task_tile.dart';
+import 'priority_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -11,7 +12,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _taskController = TextEditingController();
   List<Task> _tasks = [];
-  List<Task> _allTasks = []; // Store original tasks separately
+  List<Task> _allTasks = []; // Store all tasks for search
   final LocalStorage _storage = LocalStorage();
 
   @override
@@ -22,7 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
-    _taskController.dispose(); // Dispose controller to prevent memory leaks
+    _taskController.dispose();
     super.dispose();
   }
 
@@ -30,7 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
     List<Task> loadedTasks = await _storage.loadTasks();
     setState(() {
       _tasks = loadedTasks;
-      _allTasks = List.from(loadedTasks); // Keep a copy of the original list
+      _allTasks = List.from(loadedTasks); // Copy for search
     });
   }
 
@@ -62,12 +63,32 @@ class _HomeScreenState extends State<HomeScreen> {
     _storage.saveTasks(_tasks);
   }
 
+  void _setPriority(int index, String priority) {
+    setState(() {
+      _tasks[index].priority = priority;
+    });
+    _storage.saveTasks(_tasks);
+  }
+
+  void _openPriorityScreen(int index) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => PriorityScreen(
+              task: _tasks[index],
+              onPrioritySelected: (priority) {
+                _setPriority(index, priority);
+              },
+            ),
+      ),
+    );
+  }
+
   void _searchTask(String query) {
     setState(() {
       if (query.isEmpty) {
-        _tasks = List.from(
-          _allTasks,
-        ); // Restore original list if query is empty
+        _tasks = List.from(_allTasks);
       } else {
         _tasks =
             _allTasks
@@ -96,19 +117,44 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: Column(
         children: [
+          // 🟢 Add Task Bar
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              controller: _taskController,
-              decoration: InputDecoration(
-                labelText: "New Task",
-                suffixIcon: IconButton(
-                  icon: Icon(Icons.add),
-                  onPressed: _addTask,
+            child: Row(
+              children: [
+                // 🟢 TextField for entering tasks
+                Expanded(
+                  child: TextField(
+                    controller: _taskController,
+                    decoration: InputDecoration(
+                      labelText: "New Task",
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
                 ),
-              ),
+                SizedBox(width: 8),
+
+                // 🟢 Rectangular "Add" button with same height as TextField
+                SizedBox(
+                  height: 56, // Set the same height as TextField
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.zero,
+                      ), // Remove button roundness
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                      ), // Adjust padding
+                    ),
+                    onPressed: _addTask,
+                    child: Text("Add"),
+                  ),
+                ),
+              ],
             ),
           ),
+
+          // 🟢 Task List
           Expanded(
             child: ListView.builder(
               itemCount: _tasks.length,
@@ -117,6 +163,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   task: _tasks[index],
                   onToggle: () => _toggleTask(index),
                   onDelete: () => _deleteTask(index),
+                  onTap: () => _openPriorityScreen(index),
                 );
               },
             ),
